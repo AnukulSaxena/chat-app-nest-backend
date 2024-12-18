@@ -1,4 +1,11 @@
-import { Body, Controller, Get, InternalServerErrorException, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  InternalServerErrorException,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserDto } from './dto/user.dto';
 
@@ -9,32 +16,28 @@ export class UserController {
   @Post()
   async createUser(@Body() body: UserDto) {
     const user = await this.userService.createUser(body);
-    if(!user){
-        throw new InternalServerErrorException('User Creation Failed');
+    if (!user) {
+      throw new InternalServerErrorException('User Creation Failed');
     }
 
-    return{data: user, message: 'User Created Successfully'}
-    
+    return { data: user, message: 'User Created Successfully' };
   }
 
   @Get()
   async getUsers() {
-    const users =  await this.userService.getUsers();
-    if(!users){
-        throw new InternalServerErrorException('User Fetch Failed');
+    const users = await this.userService.getUsers();
+    if (!users) {
+      throw new InternalServerErrorException('User Fetch Failed');
     }
-    return{data: users, message: 'User Fetched Successfully'}
-    
+    return { data: users, message: 'User Fetched Successfully' };
   }
 
   @Get(':id')
-  async getuser(
-    @Param('id') id: string
-  ){
+  async getuser(@Param('id') id: string) {
     const user = await this.userService.getuser(id);
-    if(!user){
-        throw new InternalServerErrorException('User Fetch Failed');
+    if (!user) {
+      throw new InternalServerErrorException('User Fetch Failed');
     }
-    return{data: user, message: 'User Fetched Successfully'}
+    return { data: user, message: 'User Fetched Successfully' };
   }
 }
