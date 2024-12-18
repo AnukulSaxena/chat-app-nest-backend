@@ -23,6 +23,12 @@ export class UserController {
     return { data: user, message: 'User Created Successfully' };
   }
 
+  @Post('login')
+  async loginUser(@Body() body: UserDto) {
+    const user = await this.userService.loginUser(body);
+    return { data: user, message: 'User Logged In Successfully' };
+  }
+
   @Get()
   async getUsers() {
     const users = await this.userService.getUsers();
