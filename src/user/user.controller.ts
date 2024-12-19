@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   InternalServerErrorException,
   Param,
   Post,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserDto } from './dto/user.dto';
@@ -30,8 +32,12 @@ export class UserController {
   }
 
   @Get()
-  async getUsers() {
-    const users = await this.userService.getUsers();
+  async getUsers(
+    @Query() query: { ownerId: string },  // ID of the current user
+  ) {
+    if(!query.ownerId)
+      throw new BadRequestException('ownerId is required');
+    const users = await this.userService.getUsers(query.ownerId);
     if (!users) {
       throw new InternalServerErrorException('User Fetch Failed');
     }
@@ -47,3 +53,4 @@ export class UserController {
     return { data: user, message: 'User Fetched Successfully' };
   }
 }
+ 
