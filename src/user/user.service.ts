@@ -47,35 +47,51 @@ export class UserService {
       .limit(limit)
       .exec();
 
-    const relationships = await this.relationshipService.getRelationShips(ownerId);
+    const relationships =
+      await this.relationshipService.getRelationShips(ownerId);
 
-    const relationshipMap = new Map<string, string>();
+    const relationshipMap = new Map<
+      string,
+      { status: string; relationId: string }
+    >();
 
     relationships.forEach((relation) => {
       if (relation.fromUserId.toString() === ownerId) {
         if (relation.status === RelationshipStatus.Pending) {
-          relationshipMap.set(relation.toUserId.toString(), 'sentRequest');
+          relationshipMap.set(relation.toUserId.toString(), {
+            status: 'sentRequest',
+            relationId: relation._id.toString(),
+          });
         } else if (relation.status === RelationshipStatus.Confirmed) {
-          relationshipMap.set(relation.toUserId.toString(), 'friend');
+          relationshipMap.set(relation.toUserId.toString(), {
+            status: 'friend',
+            relationId: relation._id.toString(),
+          });
         }
       } else if (relation.toUserId.toString() === ownerId) {
         if (relation.status === RelationshipStatus.Pending) {
-          relationshipMap.set(
-            relation.fromUserId.toString(),
-            'receivedRequest',
-          );
+          relationshipMap.set(relation.fromUserId.toString(), {
+            status: 'receivedRequest',
+            relationId: relation._id.toString(),
+          });
         } else if (relation.status === RelationshipStatus.Confirmed) {
-          relationshipMap.set(relation.fromUserId.toString(), 'friend');
+          relationshipMap.set(relation.fromUserId.toString(), {
+            status: 'friend',
+            relationId: relation._id.toString(),
+          });
         }
       }
     });
 
     const usersWithRelationships = users.map((user) => {
-      const relationshipStatus =
-        relationshipMap.get(user._id.toString()) || 'none';
+      const relationship = relationshipMap.get(user._id.toString()) || {
+        status: 'none',
+        relationId: '',
+      };
       return {
         ...user.toObject(),
-        relationshipStatus,
+        relationshipStatus: relationship.status,
+        relationId: relationship.relationId,
       };
     });
 
@@ -84,7 +100,9 @@ export class UserService {
       pagination: {
         page,
         limit,
-        totalPages: await this.userModel.countDocuments({ _id: { $ne: ownerId } }),
+        totalPages: await this.userModel.countDocuments({
+          _id: { $ne: ownerId },
+        }),
       },
     };
   }

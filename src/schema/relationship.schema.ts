@@ -35,3 +35,14 @@ export class Relationship extends Document {
 }
 
 export const RelationshipSchema = SchemaFactory.createForClass(Relationship);
+
+
+RelationshipSchema.pre('save' , function (next) {
+  if( typeof this.fromUserId === 'string')
+    this.fromUserId = new Types.ObjectId(`${this.fromUserId}`);
+
+  if( typeof this.toUserId === 'string')
+    this.toUserId = new Types.ObjectId(`${this.toUserId}`);
+
+  next();
+})

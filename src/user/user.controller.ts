@@ -35,6 +35,7 @@ export class UserController {
   async getUsers(
     @Query() query: { ownerId: string },  // ID of the current user
   ) {
+    console.log('ownerid --> ', query.ownerId)
     if(!query.ownerId)
       throw new BadRequestException('ownerId is required');
     const users = await this.userService.getUsers(query.ownerId);
