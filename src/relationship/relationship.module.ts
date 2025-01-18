@@ -20,5 +20,6 @@ import {
   ],
   controllers: [RelationshipController],
   providers: [RelationshipService],
+  exports: [RelationshipService]
 })
 export class RelationshipModule {}

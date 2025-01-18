@@ -7,15 +7,20 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from 'src/schema/user.schema';
-import { UserDto } from './dto/user.dto';
+import { RefreshTokenDTO, UserDto } from './dto/user.dto';
 import { RelationshipService } from 'src/relationship/relationship.service';
 import { RelationshipStatus } from 'src/schema/relationship.schema';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { MyRedisService } from 'src/my-redis/my-redis.service';
+import { SessionService } from 'src/session/session.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private readonly relationshipService: RelationshipService,
+    private readonly sessionService: SessionService,
   ) {}
 
   async createUser(user: {
@@ -125,6 +130,26 @@ export class UserService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return existingUser;
+    const { accessToken, refreshToken, sessionId } =
+      await this.sessionService.generateTokens(existingUser);
+    return { accessToken, refreshToken, user: existingUser, sessionId };
+  }
+
+  async refreshToken(data: RefreshTokenDTO) {
+    const isValid = await this.sessionService.validateRefreshToken(
+      data.userName,
+      data.sessionId,
+      data.refreshToken,
+    );
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid Refresh Token');
+    }
+
+    return await this.sessionService.refreshRedisToken(
+      data.userId,
+      data.userName,
+      data.sessionId,
+    );
   }
 }

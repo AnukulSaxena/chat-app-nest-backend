@@ -30,7 +30,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // Triggered when a client disconnects
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    console.log(`Cliendddddt disconnected: ${client.id}`);
   }
 
   // Listen for a custom event, like sending a message

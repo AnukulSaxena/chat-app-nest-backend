@@ -7,13 +7,20 @@ import {
   Param,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { UserService } from './user.service';
-import { UserDto } from './dto/user.dto';
+import { RefreshTokenDTO, UserDto } from './dto/user.dto';
+import { ConfigService } from '@nestjs/config';
+import { UserId, UserName } from 'src/decorator/custom-decorators';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post()
   async createUser(@Body() body: UserDto) {
@@ -26,19 +33,31 @@ export class UserController {
   }
 
   @Post('login')
-  async loginUser(@Body() body: UserDto) {
-    const user = await this.userService.loginUser(body);
-    return { data: user, message: 'User Logged In Successfully' };
+  async loginUser(@Body() body: UserDto, @Res() res: Response) {
+    const metadata = await this.userService.loginUser(body);
+    res.cookie('accessToken', metadata.accessToken, {
+      httpOnly: true,
+      secure: this.configService.get('NEST_ENV') === 'production',
+      sameSite: 'strict',
+      maxAge: 3600000,
+    });
+
+    res.cookie('refreshToken', metadata.refreshToken, {
+      httpOnly: true,
+      secure: this.configService.get('NEST_ENV') === 'production',
+      sameSite: 'strict',
+      maxAge: 604800000,
+    });
+
+    res.send({ data: metadata, message: 'User Logged In Successfully' });
   }
 
   @Get()
   async getUsers(
-    @Query() query: { ownerId: string },  // ID of the current user
+    @Query() query: { ownerId: string }, // ID of the current user
+    @UserId() userId: string
   ) {
-    console.log('ownerid --> ', query.ownerId)
-    if(!query.ownerId)
-      throw new BadRequestException('ownerId is required');
-    const users = await this.userService.getUsers(query.ownerId);
+    const users = await this.userService.getUsers(userId);
     if (!users) {
       throw new InternalServerErrorException('User Fetch Failed');
     }
@@ -53,5 +72,24 @@ export class UserController {
     }
     return { data: user, message: 'User Fetched Successfully' };
   }
+
+  @Post('refresh-token')
+  async refreshToken(@Body() body: RefreshTokenDTO, @Res() res: Response){
+    const {refreshToken, accessToken} =  await this.userService.refreshToken(body);
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: this.configService.get('NEST_ENV') === 'production',
+      sameSite: 'strict',
+      maxAge: 3600000,
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: this.configService.get('NEST_ENV') === 'production',
+      sameSite: 'strict',
+      maxAge: 604800000,
+    });
+
+    res.send({ data: {refreshToken, accessToken}, message: 'Token Refreshed Successfully' });
+  }
 }
- 
