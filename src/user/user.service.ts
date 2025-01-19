@@ -7,13 +7,15 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from 'src/schema/user.schema';
-import { RefreshTokenDTO, UserDto } from './dto/user.dto';
+import { LogOutDTO, RefreshTokenDTO, UserDto } from './dto/user.dto';
 import { RelationshipService } from 'src/relationship/relationship.service';
 import { RelationshipStatus } from 'src/schema/relationship.schema';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { MyRedisService } from 'src/my-redis/my-redis.service';
 import { SessionService } from 'src/session/session.service';
+import { IBrowser, IDevice } from 'ua-parser-js';
+import { UserMetaData } from './user.controller';
 
 @Injectable()
 export class UserService {
@@ -118,7 +120,7 @@ export class UserService {
     return user;
   }
 
-  async loginUser(user: UserDto) {
+  async loginUser(user: UserDto, userData: UserMetaData) {
     const existingUser = await this.userModel
       .findOne({ userName: user.userName })
       .exec();
@@ -131,7 +133,7 @@ export class UserService {
     }
 
     const { accessToken, refreshToken, sessionId } =
-      await this.sessionService.generateTokens(existingUser);
+      await this.sessionService.generateTokens(existingUser, userData);
     return { accessToken, refreshToken, user: existingUser, sessionId };
   }
 
@@ -151,5 +153,11 @@ export class UserService {
       data.userName,
       data.sessionId,
     );
+  }
+
+  async logout(data:LogOutDTO){
+
+    await this.sessionService.revokeSession(data);
+
   }
 }

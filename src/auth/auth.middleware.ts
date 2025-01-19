@@ -6,6 +6,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { NextFunction, Request, Response } from 'express';
+import { UAParser } from 'ua-parser-js';
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {

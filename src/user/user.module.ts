@@ -30,6 +30,10 @@ export class UserModule {
           method: RequestMethod.POST,
         },
         {
+          path: 'user/logout',
+          method: RequestMethod.POST,
+        },
+        {
           path: 'user/refresh-token',
           method: RequestMethod.POST,
         },

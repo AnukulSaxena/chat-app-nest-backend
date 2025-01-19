@@ -11,6 +11,17 @@ export class UserDto {
     password: string;
 }
 
+export class LogOutDTO {
+
+    @IsString()
+    @IsNotEmpty()
+    userName: string;
+
+    @IsString()
+    @IsNotEmpty()
+    sessionId: string;
+}
+
 export class RefreshTokenDTO {
 
     @IsString()

@@ -7,13 +7,23 @@ import {
   Param,
   Post,
   Query,
+  Req,
   Res,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { UserService } from './user.service';
-import { RefreshTokenDTO, UserDto } from './dto/user.dto';
+import { LogOutDTO, RefreshTokenDTO, UserDto } from './dto/user.dto';
 import { ConfigService } from '@nestjs/config';
 import { UserId, UserName } from 'src/decorator/custom-decorators';
+import { UAParser } from 'ua-parser-js';
+
+export type UserMetaData = {
+  type: string; // Device type, e.g., 'mobile', 'desktop', or 'unknown'
+  browser: string; // Browser name, e.g., 'Chrome', 'Firefox'
+  os: string; // Operating system name, e.g., 'Windows', 'Android'
+};
+
 
 @Controller('user')
 export class UserController {
@@ -33,8 +43,20 @@ export class UserController {
   }
 
   @Post('login')
-  async loginUser(@Body() body: UserDto, @Res() res: Response) {
-    const metadata = await this.userService.loginUser(body);
+  async loginUser(
+    @Body() body: UserDto,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const { browser, cpu, device, os } = UAParser(userAgent);
+    
+    const userMetaData = {
+      type: device.type || 'unknown',
+      browser: browser.name,
+      os: os.name,
+    };
+    const metadata = await this.userService.loginUser(body, userMetaData);
     res.cookie('accessToken', metadata.accessToken, {
       httpOnly: true,
       secure: this.configService.get('NEST_ENV') === 'production',
@@ -52,10 +74,32 @@ export class UserController {
     res.send({ data: metadata, message: 'User Logged In Successfully' });
   }
 
+  @Post('logout')
+  async logout(@Body() body: LogOutDTO, @Res() res: Response) {
+    await this.userService.logout(body);
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: this.configService.get('NEST_ENV') === 'production',
+      sameSite: 'strict',
+    });
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: this.configService.get('NEST_ENV') === 'production',
+      sameSite: 'strict',
+    });
+
+    res.send({
+      data: {},
+      success: true,
+      message: 'User Logged Out Successfully',
+    });
+  }
+
   @Get()
   async getUsers(
     @Query() query: { ownerId: string }, // ID of the current user
-    @UserId() userId: string
+    @UserId() userId: string,
   ) {
     const users = await this.userService.getUsers(userId);
     if (!users) {
@@ -74,8 +118,9 @@ export class UserController {
   }
 
   @Post('refresh-token')
-  async refreshToken(@Body() body: RefreshTokenDTO, @Res() res: Response){
-    const {refreshToken, accessToken} =  await this.userService.refreshToken(body);
+  async refreshToken(@Body() body: RefreshTokenDTO, @Res() res: Response) {
+    const { refreshToken, accessToken } =
+      await this.userService.refreshToken(body);
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: this.configService.get('NEST_ENV') === 'production',
@@ -90,6 +135,9 @@ export class UserController {
       maxAge: 604800000,
     });
 
-    res.send({ data: {refreshToken, accessToken}, message: 'Token Refreshed Successfully' });
+    res.send({
+      data: { refreshToken, accessToken },
+      message: 'Token Refreshed Successfully',
+    });
   }
 }
