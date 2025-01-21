@@ -11,9 +11,8 @@ import { RelationshipModule } from './relationship/relationship.module';
 import { ChatAppGateway } from './chat-app/chat-app.gateway';
 import { ChatAppModule } from './chat-app/chat-app.module';
 import { MyRedisModule } from './my-redis/my-redis.module';
-import { RedisModule } from 'nestjs-redis';
-import { SessionService } from './session/session.service';
 import { SessionModule } from './session/session.module';
+import { MessageModule } from './message/message.module';
 
 @Module({
   imports: [ChatModule,  
@@ -29,7 +28,8 @@ import { SessionModule } from './session/session.module';
     RelationshipModule,
     ChatAppModule,
     MyRedisModule,
-    SessionModule],
+    SessionModule,
+    MessageModule],
   controllers: [AppController],
   providers: [AppService, MessageService, ChatAppGateway],
 })

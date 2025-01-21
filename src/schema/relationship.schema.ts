@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { User } from './user.schema';
 
 export enum RelationshipStatus {
   Pending = 'pending',
@@ -13,14 +14,14 @@ export enum RelationshipStatus {
 export class Relationship extends Document {
   @Prop({
     type: Types.ObjectId,
-    ref: 'User', 
+    ref: User.name, 
     required: true,
   })
   fromUserId: Types.ObjectId;
 
   @Prop({
     type: Types.ObjectId,
-    ref: 'User', 
+    ref: User.name, 
     required: true,
   })
   toUserId: Types.ObjectId;
