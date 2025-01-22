@@ -86,7 +86,7 @@ export class MyRedisService {
    * @param socketId - The socket ID
    * @param ttl - Time-to-live in seconds
    */
-  async addSocketId(userId: string, socketId: string, ttl = 30): Promise<void> {
+  async addSocketId(userId: string, socketId: string, ttl = 3600): Promise<void> {
     const key = `${this.socketKeyPrefix}:${userId}`;
     await this.redis.sadd(key, socketId);
     await this.redis.hset(this.socketToUserHash, socketId, userId);
@@ -163,6 +163,7 @@ export class MyRedisService {
   async get(key: string): Promise<any> {
     const data = await this.redis.get(key);
     return data ? JSON.parse(data) : null;
+
   }
 
   async delete(key: string): Promise<void> {
