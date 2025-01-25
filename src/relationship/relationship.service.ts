@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, PipelineStage, Types } from 'mongoose';
 import {
   Relationship,
   RelationshipStatus,
@@ -51,11 +51,9 @@ export class RelationshipService {
     }
 
     if (status === updateRelationShipStatus.Confirmed) {
-      
       relationship.status = RelationshipStatus.Confirmed;
       await relationship.save();
     } else if (status === updateRelationShipStatus.Rejected) {
-
       await this.relationshipModel.findByIdAndDelete(relationId);
     }
   }
@@ -67,5 +65,95 @@ export class RelationshipService {
         { toUserId: new Types.ObjectId(`${ownerId}`) },
       ],
     });
+  }
+
+  async getFriends(
+    ownerId: Types.ObjectId,
+  ): Promise<{ id: Types.ObjectId; userName: string }[]> {
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          status: 'confirmed',
+        },
+      },
+      {
+        $facet: {
+          from: [
+            {
+              $match: {
+                fromUserId: ownerId,
+              },
+            },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'toUserId',
+                foreignField: '_id',
+                as: 'toDetails',
+              },
+            },
+            {
+              $unwind: {
+                path: '$toDetails',
+                preserveNullAndEmptyArrays: false,
+              },
+            },
+            {
+              $project: {
+                id: '$toDetails._id',
+                userName: '$toDetails.userName',
+              },
+            },
+          ],
+          to: [
+            {
+              $match: {
+                toUserId: ownerId,
+              },
+            },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'fromUserId',
+                foreignField: '_id',
+                as: 'fromDetails',
+              },
+            },
+            {
+              $unwind: {
+                path: '$fromDetails',
+                preserveNullAndEmptyArrays: false,
+              },
+            },
+            {
+              $project: {
+                id: '$fromDetails._id',
+                userName: '$fromDetails.userName',
+              },
+            },
+          ],
+        },
+      },
+      {
+        $project: {
+          mergedUsers: {
+            $concatArrays: ['$from', '$to'],
+          },
+        },
+      },
+      {
+        $unwind: '$mergedUsers',
+      },
+      {
+        $replaceRoot: {
+          newRoot: '$mergedUsers',
+        },
+      },
+    ];
+
+    const result = await this.relationshipModel.aggregate(pipeline).exec();
+    console.log(result);
+
+    return result;
   }
 }
