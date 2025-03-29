@@ -105,11 +105,12 @@ export class MyRedisService {
    */
   async removeSocketId(socketId: string): Promise<void> {
     const userId = await this.redis.hget(this.socketToUserHash, socketId);
+    await this.redis.hdel(this.socketToUserHash, socketId);
+    await this.redis.del(`socketTTL:${socketId}`);
     if (userId) {
       const key = `${this.socketKeyPrefix}:${userId}`;
       await this.redis.srem(key, socketId);
-      await this.redis.hdel(this.socketToUserHash, socketId);
-      await this.redis.del(`socketTTL:${socketId}`);
+
 
       console.log('counter', this.counter++);
       this.logger.log(`Removed socket ID: ${socketId} for user ID: ${userId}`);

@@ -11,7 +11,6 @@ import { Message, MessageSchema } from 'src/schema/message.schema';
       name: Message.name,
       schema: MessageSchema
     }])
-
   ],
   controllers: [MessageController],
   providers: [MessageService],

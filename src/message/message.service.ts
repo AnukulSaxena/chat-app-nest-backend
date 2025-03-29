@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Type } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Message } from 'src/schema/message.schema';
@@ -10,16 +10,15 @@ export class MessageService {
   ) {}
 
   async create(message: {
-    user: string;
+    sender: Types.ObjectId;
     text: string;
+    chat: Types.ObjectId;
   }): Promise<Message | null> {
     const createdMessage = new this.messageModel(message);
-    return createdMessage.save();
+    return await createdMessage.save();
   }
 
   async getChatMessages(chat: Types.ObjectId): Promise<Message[]> {
-    return this.messageModel.find({ chat })
-    .sort({ createdAt: 1 })
-    .exec();
+    return this.messageModel.find({ chat }).sort({ createdAt: 1 }).exec();
   }
 }

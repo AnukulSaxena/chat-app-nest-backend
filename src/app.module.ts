@@ -13,24 +13,36 @@ import { ChatAppModule } from './chat-app/chat-app.module';
 import { MyRedisModule } from './my-redis/my-redis.module';
 import { SessionModule } from './session/session.module';
 import { MessageModule } from './message/message.module';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
-  imports: [ChatModule,  
+  imports: [
+    ChatModule,
     ConfigModule.forRoot(),
     MongooseModule.forRoot(process.env.MONGO_URI),
     MongooseModule.forFeature([
-    {
-      name: Message.name,
-      schema: MessageSchema,
-    },
-  ]),
+      {
+        name: Message.name,
+        schema: MessageSchema,
+      },
+    ]),
     UserModule,
     RelationshipModule,
     ChatAppModule,
     MyRedisModule,
     SessionModule,
-    MessageModule],
+    MessageModule,
+    BullModule.forRoot({ 
+      redis: {
+        host: 'localhost', 
+        port: 6379,     
+      },
+    }),
+    BullModule.registerQueue({ 
+      name: 'chat-app', 
+    }),
+  ],
   controllers: [AppController],
-  providers: [AppService, MessageService, ChatAppGateway],
+  providers: [AppService],
 })
 export class AppModule {}

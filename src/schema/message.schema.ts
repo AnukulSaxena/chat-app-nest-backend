@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { User } from './user.schema';
 import { Chat } from './chat.schema';
+import { z } from 'zod';
 
 @Schema({ timestamps: true })
 export class Message extends Document {
@@ -27,3 +28,18 @@ export class Message extends Document {
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
+
+
+const mongoIdRegex = /^[a-fA-F0-9]{24}$/;
+
+export const MessageZodSchema = z.object({
+  sender: z
+    .string()
+    .regex(mongoIdRegex, "Sender must be a valid MongoDB ObjectId"),
+  text: z.string().min(1, "Message text is required"),
+  chat: z
+    .string()
+    .regex(mongoIdRegex, "Chat must be a valid MongoDB ObjectId"),
+});
+
+export type MessageType = z.infer<typeof MessageZodSchema>;
