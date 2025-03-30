@@ -15,10 +15,12 @@ export class MessageService {
     chat: Types.ObjectId;
   }): Promise<Message | null> {
     const createdMessage = new this.messageModel(message);
-    return await createdMessage.save();
+    return createdMessage.save();
   }
 
   async getChatMessages(chat: Types.ObjectId): Promise<Message[]> {
     return this.messageModel.find({ chat }).sort({ createdAt: 1 }).exec();
   }
+
+  
 }

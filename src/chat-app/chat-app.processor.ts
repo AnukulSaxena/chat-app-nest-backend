@@ -9,12 +9,20 @@ import {
 import { Job } from 'bullmq'; // Or 'bull'
 import { Logger } from '@nestjs/common'; // Optional: for logging
 import { MyRedisService } from 'src/my-redis/my-redis.service';
+import { ChatAppGateway } from './chat-app.gateway';
+import { CreateMessageDto } from 'src/chat/dto/chat.dto';
+import { MessageService } from 'src/message/message.service';
+import { Types } from 'mongoose';
 
 @Processor('chat-app') // Decorator links this class to the 'audio' queue
 export class ChatAppProcessor {
   private readonly logger = new Logger(ChatAppProcessor.name);
 
-  constructor(private readonly redisService: MyRedisService) {}
+  constructor(
+    private readonly redisService: MyRedisService,
+    private readonly chatGateway: ChatAppGateway,
+    private readonly messageService: MessageService,
+  ) {}
 
   // Optional: Listen to queue events
   @OnQueueActive()
@@ -43,9 +51,11 @@ export class ChatAppProcessor {
     const { userId } = job.data;
     this.logger.debug(`Start validating user ${userId}...`);
 
-    const receiverSocketIds = await this.redisService.getSocketIdsForUser(userId);
+    const receiverSocketIds =
+      await this.redisService.getSocketIdsForUser(userId);
 
-    const validSockets = await this.redisService.redis.smembers('valid_sockets'); // Get all valid sockets
+    const validSockets =
+      await this.redisService.redis.smembers('valid_sockets'); // Get all valid sockets
 
     for (const socketId of receiverSocketIds) {
       if (!validSockets.includes(socketId)) {
@@ -53,6 +63,26 @@ export class ChatAppProcessor {
         await this.redisService.removeSocketId(socketId);
       }
     }
+  }
+
+  @Process('handle-message')
+  async handleMessages(job: Job<{ socketId: string; data: CreateMessageDto }>) {
+    const { socketId, data } = job.data;
+
+    const sender = await this.redisService.getUserIdFromSocket(socketId);
+    const message = await this.messageService.create({
+      sender: new Types.ObjectId(`${sender}`),
+      text: data.message,
+      chat: new Types.ObjectId(`${data.chatId}`),
+    });
+    const receiverSocketIds = await this.redisService.getSocketIdsForUser(
+      data.receiver,
+    );
+    console.log('receiverSocketIds', receiverSocketIds);
+    receiverSocketIds.forEach((receiverSocketId) => {
+      console.log('sending to -> ', receiverSocketId);
+      this.chatGateway.emitMessage(receiverSocketId, message);
+    });
   }
 
   // You can have multiple @Process decorators for different named jobs

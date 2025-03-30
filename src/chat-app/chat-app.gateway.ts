@@ -1,4 +1,4 @@
-import { Logger, UseFilters, UnauthorizedException, OnModuleInit } from '@nestjs/common';
+import { Logger, UseFilters, OnModuleInit } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -13,9 +13,9 @@ import { ConfigService } from '@nestjs/config';
 import { parseJwtPayload } from 'src/auth/dto/token.dto';
 import { MyRedisService } from 'src/my-redis/my-redis.service';
 import { CreateMessageDto } from 'src/chat/dto/chat.dto';
-import { MessageService } from 'src/message/message.service';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bull';
+import { Message } from 'src/schema/message.schema';
 
 @WebSocketGateway({
   cors: {
@@ -27,7 +27,6 @@ export class ChatAppGateway implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly redisService: MyRedisService,
-    private readonly messageService: MessageService,
     @InjectQueue('chat-app') private readonly chatAppQueue: Queue
   ) {}
   private readonly logger = new Logger(ChatAppGateway.name);
@@ -72,21 +71,7 @@ export class ChatAppGateway implements OnModuleInit {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: CreateMessageDto,
   ) {
-    // const sender = await this.redisService.getUserIdFromSocket(client.id);
-    // console.log('sender', sender);
-    // this.messageService.create({
-    //   sender: new Types.ObjectId(`${sender}`),
-    //   text: data.message,
-    //   chat: new Types.ObjectId(`${data.chatId}`),
-    // });
-    const receiverSocketIds = await this.redisService.getSocketIdsForUser(
-      data.receiver,
-    );
-    console.log('receiverSocketIds', receiverSocketIds);
-    receiverSocketIds.forEach((receiverSocketId) => {
-      console.log('sending to -> ', receiverSocketId);
-      this.server.to(receiverSocketId).emit('message', data);
-    });
+    this.chatAppQueue.add('handle-message', { socketId: client.id, data });
   }
 
   handleDisconnect(client: Socket) {
@@ -96,6 +81,10 @@ export class ChatAppGateway implements OnModuleInit {
 
   isValidSocket(socketId: string) {
     return this.server.sockets.sockets.has(socketId);
+  }
+
+  emitMessage(socketId: string, message: Message){
+    this.server.to(socketId).emit('message', message);
   }
 
 }

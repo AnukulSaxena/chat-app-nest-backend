@@ -29,6 +29,8 @@ export class Message extends Document {
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
 
+MessageSchema.index({chat: 1})
+
 
 const mongoIdRegex = /^[a-fA-F0-9]{24}$/;
 
