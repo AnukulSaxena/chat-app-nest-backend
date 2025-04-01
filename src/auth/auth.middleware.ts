@@ -34,6 +34,7 @@ export class AuthMiddleware implements NestMiddleware {
   }
 
   use(req: Request, res: Response, next: NextFunction) {
+    console.log("we ere middlewaring")
     const token = this.extractToken(req);
     if (!token) {
       throw new UnauthorizedException('Token is Required');

@@ -70,90 +70,54 @@ export class RelationshipService {
   async getFriends(
     ownerId: Types.ObjectId,
   ): Promise<{ id: Types.ObjectId; userName: string }[]> {
+
+
     const pipeline: PipelineStage[] = [
       {
         $match: {
           status: 'confirmed',
+          $or: [
+            {
+              fromUserId: ownerId,
+            },
+            { 
+              toUserId: ownerId 
+            },
+          ],
         },
       },
       {
-        $facet: {
-          from: [
-            {
-              $match: {
-                fromUserId: ownerId,
-              },
-            },
-            {
-              $lookup: {
-                from: 'users',
-                localField: 'toUserId',
-                foreignField: '_id',
-                as: 'toDetails',
-              },
-            },
-            {
-              $unwind: {
-                path: '$toDetails',
-                preserveNullAndEmptyArrays: false,
-              },
-            },
-            {
-              $project: {
-                id: '$toDetails._id',
-                userName: '$toDetails.userName',
-              },
-            },
-          ],
-          to: [
-            {
-              $match: {
-                toUserId: ownerId,
-              },
-            },
-            {
-              $lookup: {
-                from: 'users',
-                localField: 'fromUserId',
-                foreignField: '_id',
-                as: 'fromDetails',
-              },
-            },
-            {
-              $unwind: {
-                path: '$fromDetails',
-                preserveNullAndEmptyArrays: false,
-              },
-            },
-            {
-              $project: {
-                id: '$fromDetails._id',
-                userName: '$fromDetails.userName',
-              },
-            },
-          ],
+        $addFields: {
+          lookupField: {
+            $cond: {
+              if: { $eq: ['$fromUserId', ownerId] },
+              then: '$toUserId',
+              else: '$fromUserId'
+            }
+          }
         },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'lookupField',
+          foreignField: '_id',
+          as: 'user',
+        }
       },
       {
         $project: {
-          mergedUsers: {
-            $concatArrays: ['$from', '$to'],
+          status: 1,
+          userName: {
+            $arrayElemAt: ['$user.userName', 0],
           },
-        },
-      },
-      {
-        $unwind: '$mergedUsers',
-      },
-      {
-        $replaceRoot: {
-          newRoot: '$mergedUsers',
+          userId: {
+            $arrayElemAt: ['$user._id', 0],
+          },
         },
       },
     ];
 
-    const result = await this.relationshipModel.aggregate(pipeline).exec();
-    console.log(result);
-
-    return result;
+    return this.relationshipModel.aggregate(pipeline).exec();
   }
 }

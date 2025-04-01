@@ -27,21 +27,21 @@ export class ChatAppProcessor {
   // Optional: Listen to queue events
   @OnQueueActive()
   onActive(job: Job) {
-    this.logger.log(
-      `Processing job ${job.id} of type ${job.name} with data ${JSON.stringify(job.data)}...`,
-    );
+    // this.logger.log(
+    //   `Processing job ${job.id} of type ${job.name} with data ${JSON.stringify(job.data)}...`,
+    // );
   }
 
   @OnQueueCompleted()
   onCompleted(job: Job, result: any) {
-    this.logger.log(
-      `Job ${job.id} completed! Result: ${JSON.stringify(result)}`,
-    );
+    // this.logger.log(
+    //   `Job ${job.id} completed! Result: ${JSON.stringify(result)}`,
+    // );
   }
 
   @OnQueueFailed()
   onFailed(job: Job, err: Error) {
-    this.logger.error(`Job ${job.id} failed! Error: ${err.message}`, err.stack);
+    // this.logger.error(`Job ${job.id} failed! Error: ${err.message}`, err.stack);
   }
 
   // Process jobs with the name 'transcode'
@@ -49,7 +49,7 @@ export class ChatAppProcessor {
   async handleValidateUser(job: Job<{ userId: string }>) {
     console.log('job ---> ', job.data);
     const { userId } = job.data;
-    this.logger.debug(`Start validating user ${userId}...`);
+    // this.logger.debug(`Start validating user ${userId}...`);
 
     const receiverSocketIds =
       await this.redisService.getSocketIdsForUser(userId);
