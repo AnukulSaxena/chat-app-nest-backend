@@ -24,7 +24,6 @@ export type UserMetaData = {
   os: string; // Operating system name, e.g., 'Windows', 'Android'
 };
 
-
 @Controller('user')
 export class UserController {
   constructor(
@@ -50,7 +49,7 @@ export class UserController {
   ) {
     const userAgent = req.headers['user-agent'];
     const { browser, cpu, device, os } = UAParser(userAgent);
-    
+
     const userMetaData = {
       type: device.type || 'unknown',
       browser: browser.name,
@@ -69,6 +68,7 @@ export class UserController {
       secure: this.configService.get('NEST_ENV') === 'production',
       sameSite: 'strict',
       maxAge: 604800000,
+      
     });
 
     res.send({ data: metadata, message: 'User Logged In Successfully' });
@@ -138,6 +138,7 @@ export class UserController {
     res.send({
       data: { refreshToken, accessToken },
       message: 'Token Refreshed Successfully',
+      success: true,
     });
   }
 }

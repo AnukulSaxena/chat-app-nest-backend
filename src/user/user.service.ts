@@ -10,11 +10,7 @@ import { User } from 'src/schema/user.schema';
 import { LogOutDTO, RefreshTokenDTO, UserDto } from './dto/user.dto';
 import { RelationshipService } from 'src/relationship/relationship.service';
 import { RelationshipStatus } from 'src/schema/relationship.schema';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { MyRedisService } from 'src/my-redis/my-redis.service';
 import { SessionService } from 'src/session/session.service';
-import { IBrowser, IDevice } from 'ua-parser-js';
 import { UserMetaData } from './user.controller';
 
 @Injectable()
