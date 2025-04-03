@@ -13,6 +13,8 @@ import { ChatAppGateway } from './chat-app.gateway';
 import { CreateMessageDto } from 'src/chat/dto/chat.dto';
 import { MessageService } from 'src/message/message.service';
 import { Types } from 'mongoose';
+import { Message } from 'src/schema/message.schema';
+import { ChatService } from 'src/chat/chat.service';
 
 @Processor('chat-app') // Decorator links this class to the 'audio' queue
 export class ChatAppProcessor {
@@ -22,6 +24,7 @@ export class ChatAppProcessor {
     private readonly redisService: MyRedisService,
     private readonly chatGateway: ChatAppGateway,
     private readonly messageService: MessageService,
+    private readonly chatService: ChatService,
   ) {}
 
   // Optional: Listen to queue events
@@ -75,9 +78,28 @@ export class ChatAppProcessor {
       text: data.message,
       chat: new Types.ObjectId(`${data.chatId}`),
     });
-    const receiverSocketIds = await this.redisService.getSocketIdsForUser(
-      data.receiver,
-    );
+    if (!data.isGroup && data.receiver) {
+      this.emitMessage(data.receiver, message);
+    } else if (data.isGroup) {
+      const chats = await this.chatService.getUserChats(sender, false);
+      console.log(chats);
+      if (Array.isArray(chats)) {
+        const chat = chats.find((item) => `${item._id}` === data.chatId);
+        console.log(chat);
+        if (chat && Array.isArray(chat.users)) {
+          chat.users.forEach((user: { _id: string; userName: string }) => {
+            if (user._id && `${user._id}` !== sender) {
+              this.emitMessage(`${user._id}`, message);
+            }
+          });
+        }
+      }
+    }
+  }
+
+  async emitMessage(userId: string, message: Message) {
+    const receiverSocketIds =
+      await this.redisService.getSocketIdsForUser(userId);
     console.log('receiverSocketIds', receiverSocketIds);
     receiverSocketIds.forEach((receiverSocketId) => {
       console.log('sending to -> ', receiverSocketId);

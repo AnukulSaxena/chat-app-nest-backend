@@ -1,4 +1,4 @@
-import { IsBoolean, IsMongoId, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsArray, IsBoolean, IsMongoId, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 
 export class createChatDto {
@@ -9,6 +9,17 @@ export class createChatDto {
   @IsString()
   @IsNotEmpty()
   toUserId: string;
+}
+
+export class createGroupDto {
+  
+  @IsString()
+  @IsNotEmpty()
+  groupName: string;
+
+  @IsArray()
+  @IsMongoId({each: true})
+  users: string[];
 }
 
 export class CreateMessageDto {

@@ -7,10 +7,11 @@ import { ChatService } from './chat.service';
 import { Chat, ChatSchema } from 'src/schema/chat.schema';
 import { AuthMiddleware } from 'src/auth/auth.middleware';
 import { UserModule } from 'src/user/user.module';
+import { MyRedisModule } from 'src/my-redis/my-redis.module';
 
 @Module({
    imports: [
-
+      MyRedisModule,
       MongooseModule.forFeature([
       {
         name: Chat.name,
