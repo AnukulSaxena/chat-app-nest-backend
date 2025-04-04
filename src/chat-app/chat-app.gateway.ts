@@ -19,7 +19,8 @@ import { Message } from 'src/schema/message.schema';
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:5174'],
+    credentials: true,
   },
 })
 @UseFilters(new WebsocketExceptionFilter())
@@ -28,7 +29,7 @@ export class ChatAppGateway implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly redisService: MyRedisService,
     @InjectQueue('chat-app') private readonly chatAppQueue: Queue
-  ) {}
+  ) { }
   private readonly logger = new Logger(ChatAppGateway.name);
 
   @WebSocketServer()
@@ -40,8 +41,9 @@ export class ChatAppGateway implements OnModuleInit {
   }
 
   handleConnection(client: Socket) {
-    console.log('client ----------- >> ', client.id);
+    // console.log('client ----------- >> ', client.id);
     const token = client.handshake.auth?.token;
+    // console.log('tokensdsdf ----------- >> ', client.request?.headers?.cookie);
     if (!token) {
       this.logger.warn(`Unauthorized connection attempt: ${client.id}`);
       client.disconnect();
@@ -83,8 +85,13 @@ export class ChatAppGateway implements OnModuleInit {
     return this.server.sockets.sockets.has(socketId);
   }
 
-  emitMessage(socketId: string, message: Message){
-    this.server.to(socketId).emit('message', message);
+  emitMessage(socketId: string, message: Message, timeStamp: string) {
+    const newMessage = {
+      ...message,
+      timeStamp,
+    };
+    console.log('message', newMessage)
+    this.server.to(socketId).emit('message', newMessage);
   }
 
 }

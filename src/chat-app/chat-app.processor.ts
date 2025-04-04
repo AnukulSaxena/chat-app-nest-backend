@@ -50,7 +50,6 @@ export class ChatAppProcessor {
   // Process jobs with the name 'transcode'
   @Process('validate-user')
   async handleValidateUser(job: Job<{ userId: string }>) {
-    console.log('job ---> ', job.data);
     const { userId } = job.data;
     // this.logger.debug(`Start validating user ${userId}...`);
 
@@ -62,7 +61,6 @@ export class ChatAppProcessor {
 
     for (const socketId of receiverSocketIds) {
       if (!validSockets.includes(socketId)) {
-        console.log('removing socketId', socketId);
         await this.redisService.removeSocketId(socketId);
       }
     }
@@ -71,6 +69,8 @@ export class ChatAppProcessor {
   @Process('handle-message')
   async handleMessages(job: Job<{ socketId: string; data: CreateMessageDto }>) {
     const { socketId, data } = job.data;
+    console.log('message ---> ', data);
+    const {timeStamp} = data;
 
     const sender = await this.redisService.getUserIdFromSocket(socketId);
     const message = await this.messageService.create({
@@ -78,32 +78,24 @@ export class ChatAppProcessor {
       text: data.message,
       chat: new Types.ObjectId(`${data.chatId}`),
     });
-    if (!data.isGroup && data.receiver) {
-      this.emitMessage(data.receiver, message);
-    } else if (data.isGroup) {
-      const chats = await this.chatService.getUserChats(sender, false);
-      console.log(chats);
+    const chats = await this.chatService.getUserChats(sender, false);
       if (Array.isArray(chats)) {
         const chat = chats.find((item) => `${item._id}` === data.chatId);
-        console.log(chat);
         if (chat && Array.isArray(chat.users)) {
           chat.users.forEach((user: { _id: string; userName: string }) => {
-            if (user._id && `${user._id}` !== sender) {
-              this.emitMessage(`${user._id}`, message);
+            if (user._id) {
+              this.emitMessage(`${user._id}`, message.toObject(), timeStamp);
             }
           });
         }
       }
-    }
   }
 
-  async emitMessage(userId: string, message: Message) {
+  async emitMessage(userId: string, message: Message, timeStamp: string) {
     const receiverSocketIds =
       await this.redisService.getSocketIdsForUser(userId);
-    console.log('receiverSocketIds', receiverSocketIds);
     receiverSocketIds.forEach((receiverSocketId) => {
-      console.log('sending to -> ', receiverSocketId);
-      this.chatGateway.emitMessage(receiverSocketId, message);
+      this.chatGateway.emitMessage(receiverSocketId, message, timeStamp);
     });
   }
 

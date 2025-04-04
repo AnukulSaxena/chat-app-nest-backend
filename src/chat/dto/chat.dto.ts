@@ -39,4 +39,8 @@ export class CreateMessageDto {
   @IsString()
   @IsNotEmpty()
   message: string;
+
+  @IsString()
+  @IsNotEmpty()
+  timeStamp: string;
 }
